@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"issuetrack/internal/activities"
 	"issuetrack/internal/attachments"
 	"issuetrack/internal/comments"
 	"issuetrack/internal/db"
@@ -53,6 +54,9 @@ func main() {
 	attStore := attachments.NewStore(db.Pool)
 	attHandlers := attachments.NewHandlers(attStore)
 
+	activities.GlobalStore = activities.NewStore(db.Pool)
+	actHandlers := activities.NewHandlers(activities.GlobalStore)
+
 	r := chi.NewRouter()
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/signup", users.SignupHandler)
@@ -97,6 +101,7 @@ func main() {
 			r.Get("/attachments/{id}", attHandlers.Download)
 			r.Delete("/attachments/{id}", attHandlers.Delete)
 
+			r.Get("/projects/{projectId}/activity", actHandlers.ListByProject)
 		})
 	})
 	log.Println("server starting on: 8080")

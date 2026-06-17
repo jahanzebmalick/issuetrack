@@ -2,6 +2,8 @@ package comments
 
 import (
 	"encoding/json"
+	"issuetrack/internal/activities"
+	"issuetrack/internal/db"
 	"issuetrack/internal/users"
 	"net/http"
 	"strconv"
@@ -38,7 +40,11 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusInternalServerError)
 		return
 	}
+	var pid int
+	db.Pool.QueryRow(r.Context(), "SELECT project_id FROM issues WHERE id = $1", comment.IssueID).Scan(&pid)
+
 	w.Header().Set("Content-Type", "application/json")
+	activities.GlobalStore.Log(r.Context(), pid, uid, "comment_added", &comment.ID, map[string]any{"issue_id": comment.IssueID})
 	json.NewEncoder(w).Encode(comment)
 }
 func (h *Handlers) ListByIssue(w http.ResponseWriter, r *http.Request) {

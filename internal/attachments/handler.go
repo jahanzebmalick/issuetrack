@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"issuetrack/internal/activities"
 	"issuetrack/internal/db"
 	"issuetrack/internal/users"
 	"issuetrack/internal/ws"
@@ -72,6 +73,7 @@ func (h *Handlers) Upload(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	w.Header().Set("Content-Type", "application/json")
+	activities.GlobalStore.Log(r.Context(), projectID, uid, "attachment_added", &attachment.ID, map[string]any{"filename": attachment.Filename, "issue_id": attachment.IssueID})
 	json.NewEncoder(w).Encode(attachment)
 }
 func (h *Handlers) ListByIssue(w http.ResponseWriter, r *http.Request) {

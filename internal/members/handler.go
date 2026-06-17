@@ -2,6 +2,7 @@ package members
 
 import (
 	"encoding/json"
+	"issuetrack/internal/activities"
 	"issuetrack/internal/users"
 	"net/http"
 	"strconv"
@@ -35,6 +36,7 @@ func (h *Handler) Invite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	activities.GlobalStore.Log(r.Context(), projectID, uid, "member_invited", &invite.UserID, map[string]any{"username": req.Username, "role": req.Role})
 	json.NewEncoder(w).Encode(invite)
 }
 func (h *Handler) ListByProject(w http.ResponseWriter, r *http.Request) {

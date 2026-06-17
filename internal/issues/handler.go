@@ -3,8 +3,10 @@ package issues
 import (
 	"encoding/json"
 	"errors"
+	"issuetrack/internal/activities"
 	"issuetrack/internal/users"
 	"issuetrack/internal/ws"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -52,7 +54,12 @@ func (h *Handlers) Create(w http.ResponseWriter, r *http.Request) {
 		Type: "issue_created",
 		Data: issue,
 	})
+
 	w.Header().Set("Content-Type", "application/json")
+	log.Println("about to log activity")
+	if err := activities.GlobalStore.Log(r.Context(), projectID, uid, "issue_created", &issue.ID, map[string]any{"title": issue.Title}); err != nil {
+		log.Println("activity log failedd:", err)
+	}
 	json.NewEncoder(w).Encode(issue)
 }
 func (h *Handlers) ListByProject(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +126,7 @@ func (h *Handlers) Update(w http.ResponseWriter, r *http.Request) {
 		Type: "issue_updated",
 		Data: issue,
 	})
+	activities.GlobalStore.Log(r.Context(), issue.ProjectID, uid, "issue_created", &issue.ID, map[string]any{"title": issue.Title, "status": issue.Status})
 	w.WriteHeader(http.StatusNoContent)
 }
 func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
@@ -139,6 +147,7 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 		Type: "issue_deleted",
 		Data: map[string]int{"id": issueID},
 	})
+	activities.GlobalStore.Log(r.Context(), issue.ProjectID, uid, "issue_created", &issue.ID, map[string]any{"title": issue.Title})
 	w.WriteHeader(http.StatusNoContent)
 
 }
