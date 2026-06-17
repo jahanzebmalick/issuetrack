@@ -20,6 +20,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+	_ = os.MkdirAll("storage", 0755)
 
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
