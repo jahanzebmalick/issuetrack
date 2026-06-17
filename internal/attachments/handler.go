@@ -2,6 +2,7 @@ package attachments
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"issuetrack/internal/db"
 	"issuetrack/internal/users"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type Handlers struct {
@@ -111,6 +113,10 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	db.Pool.QueryRow(r.Context(), "SELECT project_id FROM issues WHERE id = $1", att.IssueID).Scan(&projectID)
 
 	storagePath, err := h.store.Delete(r.Context(), attachmentID, uid)
+	if errors.Is(err, pgx.ErrNoRows) {
+		http.Error(w, "you can only delete files you uploaded", http.StatusForbidden)
+		return
+	}
 	if err != nil {
 		http.Error(w, "delete failed", http.StatusInternalServerError)
 		return
