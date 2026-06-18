@@ -17,9 +17,11 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	_ = godotenv.Load()
 	ctx := context.Background()
 	_ = os.MkdirAll("storage", 0755)
 
@@ -62,9 +64,12 @@ func main() {
 		r.Post("/signup", users.SignupHandler)
 		r.Post("/login", users.LoginHandler)
 		r.Post("/logout", users.LogoutHandler)
+		r.Get("/auth/github/login", users.GitHubLogin)
+		r.Get("/auth/github/callback", users.GitHubCallback)
 
 		r.Group(func(r chi.Router) {
 			r.Use(users.RequireAuth)
+			r.Get("/me", users.MeHandler)
 			r.Post("/projects", projHandlers.Create)
 			r.Get("/projects", projHandlers.ListMine)
 			r.Get("/projects/{id}", projHandlers.Get)

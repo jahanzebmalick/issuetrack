@@ -85,7 +85,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Value:    sid,
 		Path:     "/",
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
 }
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,9 +95,28 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		deleteSession(cookie.Value)
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:   "session",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     "session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		SameSite: http.SameSiteNoneMode,
+		Secure:   true,
 	})
+}
+func MeHandler(w http.ResponseWriter, r *http.Request) {
+	userID, _ := UserIDFromContext(r.Context())
+	var u struct {
+		ID        int     `json:"id"`
+		Username  string  `json:"username"`
+		AvatarURL *string `json:"avatar_url"`
+	}
+	if err := db.Pool.QueryRow(r.Context(), `
+		SELECT id , username, avatar_url FROM users WHERE id = $1`, userID,
+	).Scan(&u.ID, &u.Username, &u.AvatarURL); err != nil {
+		http.Error(w, "query failed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(&u)
 }
