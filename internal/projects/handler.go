@@ -123,12 +123,12 @@ func (h *Handlers) UpdateProjectGitHubHandler(w http.ResponseWriter, r *http.Req
 	var req struct {
 		Repo string `json:"repo"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Repo == "" {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid req", http.StatusBadRequest)
 		return
 	}
 	resp, err := db.Pool.Exec(r.Context(), `
-	UPDATE projects SET github_repo = $1 WHERE id = $2 AND owner_id = $3`, req.Repo, projectID, userID)
+	UPDATE projects SET github_repo = NULLIF($1, '') WHERE id = $2 AND owner_id = $3`, req.Repo, projectID, userID)
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
