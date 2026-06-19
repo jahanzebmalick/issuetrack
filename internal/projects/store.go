@@ -13,6 +13,7 @@ type Project struct {
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
 	CreatedAt   time.Time `json:"created_at"`
+	GithubRepo  *string   `json:"github_repo"`
 }
 type Store struct {
 	db *pgxpool.Pool
@@ -30,7 +31,7 @@ func (s *Store) Create(ctx context.Context, ownerID int, name string, descriptio
 }
 func (s *Store) ListMine(ctx context.Context, ownerID int) ([]Project, error) {
 	rows, err := s.db.Query(ctx, `
-	SELECT id, owner_id, name, description, created_at FROM projects
+	SELECT id, owner_id, name, description, created_at, github_repo FROM projects
 	WHERE owner_id = $1
 	OR id IN (SELECT project_id FROM project_members WHERE user_id = $1)`,
 		ownerID)
@@ -47,6 +48,7 @@ func (s *Store) ListMine(ctx context.Context, ownerID int) ([]Project, error) {
 			&p.Name,
 			&p.Description,
 			&p.CreatedAt,
+			&p.GithubRepo,
 		)
 		if err != nil {
 			return nil, err
@@ -58,13 +60,13 @@ func (s *Store) ListMine(ctx context.Context, ownerID int) ([]Project, error) {
 func (s *Store) GetByID(ctx context.Context, projectID, ownerID int) (Project, error) {
 	var p Project
 	err := s.db.QueryRow(ctx, `
-	SELECT id, owner_id, name, description, created_at
+	SELECT id, owner_id, name, description, created_at, github_repo
 	FROM projects
 	WHERE id = $1 AND (
 	 owner_id = $2
 	 OR id IN (SELECT project_id FROm project_members WHERE user_id = $2))`,
 		projectID, ownerID).Scan(&p.ID, &p.OwnerID, &p.Name,
-		&p.Description, &p.CreatedAt,
+		&p.Description, &p.CreatedAt, &p.GithubRepo,
 	)
 	return p, err
 }
