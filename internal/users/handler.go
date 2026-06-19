@@ -79,7 +79,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sid := newSessionID()
-	setSession(sid, userID)
+	setSession(r.Context(), sid, userID)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    sid,
@@ -92,7 +92,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("session")
 	if err == nil {
-		deleteSession(cookie.Value)
+		deleteSession(r.Context(), cookie.Value)
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",

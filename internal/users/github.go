@@ -143,7 +143,7 @@ func GitHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sid := uuid.New().String()
-	setSession(sid, userID)
+	setSession(r.Context(), sid, userID)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    sid,
