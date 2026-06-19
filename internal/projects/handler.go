@@ -3,6 +3,7 @@ package projects
 import (
 	"encoding/json"
 	"errors"
+	"issuetrack/internal/db"
 	"issuetrack/internal/users"
 	"net/http"
 	"strconv"
@@ -106,6 +107,34 @@ func (h *Handlers) Delete(w http.ResponseWriter, r *http.Request) {
 	err = h.store.Delete(r.Context(), projectID, userID)
 	if err != nil {
 		http.Error(w, "delete failed", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handlers) UpdateProjectGitHubHandler(w http.ResponseWriter, r *http.Request) {
+	pidStr := chi.URLParam(r, "projectId")
+	projectID, _ := strconv.Atoi(pidStr)
+	userID, ok := users.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	var req struct {
+		Repo string `json:"repo"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Repo == "" {
+		http.Error(w, "invalid req", http.StatusBadRequest)
+		return
+	}
+	resp, err := db.Pool.Exec(r.Context(), `
+	UPDATE projects SET github_repo = $1 WHERE id = $2 AND owner_id = $3`, req.Repo, projectID, userID)
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	if resp.RowsAffected() == 0 {
+		http.Error(w, "project not found or not owned by the user", http.StatusNotFound)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

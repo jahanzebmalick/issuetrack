@@ -69,12 +69,13 @@ func main() {
 
 		r.Group(func(r chi.Router) {
 			r.Use(users.RequireAuth)
-			r.Get("/me", users.MeHandler)
+
 			r.Post("/projects", projHandlers.Create)
 			r.Get("/projects", projHandlers.ListMine)
 			r.Get("/projects/{id}", projHandlers.Get)
 			r.Patch("/projects/{id}", projHandlers.Update)
 			r.Delete("/projects/{id}", projHandlers.Delete)
+			r.Patch("/projects/{projectId}/github", projHandlers.UpdateProjectGitHubHandler)
 
 			r.Post("/projects/{projectId}/issues", issueHandlers.Create)
 			r.Get("/projects/{projectId}/issues", issueHandlers.ListByProject)
@@ -107,6 +108,9 @@ func main() {
 			r.Delete("/attachments/{id}", attHandlers.Delete)
 
 			r.Get("/projects/{projectId}/activity", actHandlers.ListByProject)
+
+			r.Get("/me", users.MeHandler)
+			r.Get("/github/repos", users.ListGitHubReposHandler)
 		})
 	})
 	log.Println("server starting on: 8080")

@@ -159,3 +159,38 @@ func GitHubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, frontend, http.StatusFound)
 }
+
+func ListGitHubReposHandler(w http.ResponseWriter, r *http.Request) {
+	userID, _ := UserIDFromContext(r.Context())
+
+	var token string
+	err := db.Pool.QueryRow(r.Context(), `
+	SELECT github_access_token FROM users WHERE id = $1`, userID).Scan(&token)
+	if err != nil {
+		http.Error(w, "no github account linked", http.StatusBadRequest)
+		return
+	}
+	userReq, _ := http.NewRequestWithContext(r.Context(), "GET", "https://api.github.com/user/repos", nil)
+	userReq.Header.Set("Authorization", "Bearer "+token)
+	userReq.Header.Set("Accept", "application/vnd.github+json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(userReq)
+	if err != nil {
+		http.Error(w, "failed to fetch repos", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	var ghRepos []struct {
+		ID          int64  `json:"id"`
+		FullName    string `json:"full_name"`
+		Description string `json:"description"`
+		Private     bool   `json:"private"`
+		UpdatedAt   string `json:"updated_at"`
+	}
+	json.NewDecoder(resp.Body).Decode(&ghRepos)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ghRepos)
+}
