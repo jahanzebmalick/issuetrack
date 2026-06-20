@@ -66,6 +66,7 @@ func main() {
 		r.Post("/logout", users.LogoutHandler)
 		r.Get("/auth/github/login", users.GitHubLogin)
 		r.Get("/auth/github/callback", users.GitHubCallback)
+		r.Get("/ws", ws.ServeWS)
 
 		r.Group(func(r chi.Router) {
 			r.Use(users.RequireAuth)
@@ -100,8 +101,6 @@ func main() {
 			r.Patch("/projects/{projectId}/members/{userId}", memberHandler.UpdateRole)
 			r.Delete("/projects/{projectId}/members/{userId}", memberHandler.Remove)
 
-			r.Get("/ws", ws.ServeWS)
-
 			r.Post("/issues/{issueId}/attachments", attHandlers.Upload)
 			r.Get("/issues/{issueId}/attachments", attHandlers.ListByIssue)
 			r.Get("/attachments/{id}", attHandlers.Download)
@@ -110,6 +109,7 @@ func main() {
 			r.Get("/projects/{projectId}/activity", actHandlers.ListByProject)
 
 			r.Get("/me", users.MeHandler)
+			r.Get("/session-token", users.SessionTokenHandler)
 			r.Get("/github/repos", users.ListGitHubReposHandler)
 		})
 	})

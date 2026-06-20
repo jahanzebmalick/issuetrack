@@ -2,17 +2,29 @@ package ws
 
 import (
 	"issuetrack/internal/db"
-	"issuetrack/internal/users"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 func ServeWS(w http.ResponseWriter, r *http.Request) {
-	uid, ok := users.UserIDFromContext(r.Context())
-	if !ok {
-		http.Error(w, "not logged in", http.StatusUnauthorized)
-		return
+	var uid int
+	if cookie, err := r.Cookie("session"); err == nil && cookie.Value != "" {
+		db.Pool.QueryRow(r.Context(), `
+		SELECT user_id FROM sessions WHERE id = $1`, cookie.Value).Scan(&uid)
+	}
+	if uid == 0 {
+		token := r.URL.Query().Get("token")
+		if token == "" {
+			http.Error(w, "not logged in", http.StatusUnauthorized)
+			return
+		}
+		err := db.Pool.QueryRow(r.Context(), `
+	SELECT user_id FROM sessions WHERE id = $1`, token).Scan(&uid)
+		if err != nil {
+			http.Error(w, "invalid token", http.StatusUnauthorized)
+			return
+		}
 	}
 	pidStr := r.URL.Query().Get("project_id")
 	projectID, err := strconv.Atoi(pidStr)
